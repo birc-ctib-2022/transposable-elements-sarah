@@ -94,7 +94,9 @@ class ListGenome(Genome):
 
     def __init__(self, n: int):
         """Create a new genome with length n."""
-        ...  # FIXME
+        self.genome = ['-'] * n # the new genome has no tes, so it is represented as - for the entire length
+        self.te = dict() # create a dictionary for te's, with ID's as keys and [pos, length] within them
+        self.id = 0 # ID start for the te's
 
     def insert_te(self, pos: int, length: int) -> int:
         """
@@ -109,8 +111,22 @@ class ListGenome(Genome):
 
         Returns a new ID for the transposable element.
         """
-        ...  # FIXME
-        return -1
+        self.id += 1 # Create new id for new te element
+        self.te[self.id] = [pos, length] # create new element in te dictionary, with ID as the key, and position and length in list
+        key_list = list(self.te.keys()) # get all keys in te dictionary
+        for key in key_list: # itterate over each element in the te dictionary
+            start = self.te[key][0] # start-position of te
+            end = start + self.te[key][1] # end position of the te
+            if start < pos <= end: # if the position is in within this range, the new te inserts into the old one, and we must deactivate the old one
+                for i in range(start, end): # used to change old te to an inactive te, we use a for-loop so we don't change start, which we need in line 124
+                    self.genome[i] = 'x' # changing 'A' to 'x' for old te
+                del self.te[key] # remove old te, as it is now inactive
+            if pos < start: # updating the start position, and also key for all te after position of new te. We need it to be start<pos, because if we also had start=pos, we would always move the pos of the new element
+                new_start = start + length # old te is pushed the equivalent of the length of the new te
+                self.te[key][0] = new_start # update start position for the old te
+        te = ['A'] * length # create new te
+        self.genome[pos:pos] = te # insert new te
+        return self.id # this should be the ID for the new te
 
     def copy_te(self, te: int, offset: int) -> int | None:
         """
@@ -126,7 +142,13 @@ class ListGenome(Genome):
 
         If te is not active, return None (and do not copy it).
         """
-        ...  # FIXME
+        if te in self.te.keys(): # checks if te-ID is in the te dictionary
+            l = self.te[te][1] # length of original te will be the same as the one that is being copied
+            p = (self.te[te][0] + offset) % len(self) # This should do math magic to make it fit inside the genome interval
+            self.insert_te(p, l) # we ise the insert_te function, that is defined above
+            return self.id
+        else:
+            return None
 
     def disable_te(self, te: int) -> None:
         """
@@ -136,17 +158,21 @@ class ListGenome(Genome):
         TEs are already inactive, so there is no need to do anything
         for those.
         """
-        ...  # FIXME
-
+        if te in self.te.keys(): # checks if te-ID is in the te dictionary
+            start = self.te[te][0] # start-position of te
+            end = start + self.te[te][1] # end position of te
+            for i in range(start, end): # itterate over te
+                self.genome[i] = 'x' # changing 'A' to 'x' for old te
+            del self.te[te]
+        return None
+            
     def active_tes(self) -> list[int]:
         """Get the active TE IDs."""
-        ...  # FIXME
-        return []
+        return list(self.te.keys()) # this function returns a list of all the keys in the dictionary, and we use te ID as keys, soooo...
 
     def __len__(self) -> int:
         """Current length of the genome."""
-        ...  # FIXME
-        return 0
+        return len(self.genome) # Because we are implementing the class as a list, we can simply use the len function for the genome
 
     def __str__(self) -> str:
         """
@@ -160,7 +186,7 @@ class ListGenome(Genome):
         represented with the character '-', active TEs with 'A', and disabled
         TEs with 'x'.
         """
-        return "FIXME"
+        return ''.join(self.genome) # Because we are implementing the class as a list, we can use the join function to take each element in the genome, and put them together as a complete string
 
 
 class LinkedListGenome(Genome):
